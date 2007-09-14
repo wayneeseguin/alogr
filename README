@@ -1,0 +1,70 @@
+= About
+
+  AlogR enables a Ruby project to log to the filesystem using non-blocking asynchronous IO with no external dependencies.
+
+= Author
+
+  Wayne E. Seguin (wayneeseguin at gmail dot com)
+
+= How it works
+
+  A global logging buffer gets added to the running application.
+  There is a global buffer which is an array of fifo queues.
+  Worker threads are to pop the first element (which is a string) off of a fifo queue and "process" it. 
+  Processing involves writing the string to disk using non-blocking asynchronous IO
+  Threads will be event based where the event is something being placed in the queue, or the queue non-empty.
+  
+= Config
+  
+  You can choose the log that the application uses:
+
+  AlogR.new( "log/app_log.log" )
+  
+  :log specifies the default log
+  
+  AlogR.new( :log => "log/app_log.log" )
+
+  You may also specify any combination of logs corresponding to the log levels in addition to the default log:
+
+  AlogR.new( :log => "log/app_log.log", :error => "log/error.log", :debug => "log/debug.log")
+
+  where log levels are one of: [ emergency, alert, critical, error, warning, notice, info, debug ] 
+
+= Application Usage
+
+  First be sure to setup the logger:
+
+  $alogger = AlogR.new(:log)
+
+  To log a string to either the error log or the default log (depending on your configuration):
+
+  "Jonnie! You borked it!".log(:error)
+
+Feature Requests:
+# Be able to specify conditional filters
+
+= Examples
+
+* Example 1
+require "lib/alogr"
+$logger = AlogR.new(:log => "/Users/wayne/projects/ruby/alogr/trunk/log/production.log")
+"a test, should go to the logs 10 times\n".log.log.log.log.log.log.log.log.log.log
+
+* Example 2
+require "lib/alogr"
+$logger = AlogR.new(
+:log => "/Users/wayne/projects/ruby/alogr/trunk/log/production.log", 
+:error => "/Users/wayne/projects/ruby/alogr/trunk/log/error.log",
+:info => "/Users/wayne/projects/ruby/alogr/trunk/log/info.log",
+/paypal => "/Users/wayne/projects/ruby/alogr/trunk/log/paypal.log"
+)
+"this should go to info log".log
+"this should go to error log".log(:error)
+"this should go to production log".log(:warning)
+
+* If line matches a regexp then sent log/paypal.log as well as production.log
+AlogR.new(:log => "log/production.log", /paypal/ => "log/paypal.log")
+
+Gets logged to both
+{ :something => "value", :something_else => "value" }.log
+
