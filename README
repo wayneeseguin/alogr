@@ -54,6 +54,47 @@ $logger = AlogR.new(:log => "/Users/wayne/projects/ruby/alogr/trunk/log/producti
 require "lib/alogr"
 $logger = AlogR.new(
 :log => "/Users/wayne/projects/ruby/alogr/trunk/log/production.log", 
+:error => "/Users/wayne/projects/ruby/alogr/trunk/log/error.log"
+)
+
+"(1)this should go to the production log\n".log
+
+"(2)this should go to error log\n".log(:error)
+
+"(3)error\n".log :error
+
+"(4)production\n".log :info
+
+"(5)error".log :error
+
+
+* Example 3
+require "lib/alogr"
+$logger = AlogR.new(
+:log => "/Users/wayne/projects/ruby/alogr/trunk/log/production.log", 
+:error => "/Users/wayne/projects/ruby/alogr/trunk/log/error.log",
+:info => "/Users/wayne/projects/ruby/alogr/trunk/log/info.log",
+:warning => "/Users/wayne/projects/ruby/alogr/trunk/log/warning.log"
+)
+
+"this should go to info log\n".log
+
+"this should go to error log\n".log(:error)
+
+"this should go to production log\n".log(:warning)
+
+"error".log :error
+
+"warning\n".log :warning
+
+"info\n".log :info
+
+"yetanother error\n".log :error
+
+* Example 4
+require "lib/alogr"
+$logger = AlogR.new(
+:log => "/Users/wayne/projects/ruby/alogr/trunk/log/production.log", 
 :error => "/Users/wayne/projects/ruby/alogr/trunk/log/error.log",
 :info => "/Users/wayne/projects/ruby/alogr/trunk/log/info.log",
 /paypal => "/Users/wayne/projects/ruby/alogr/trunk/log/paypal.log"
@@ -62,7 +103,8 @@ $logger = AlogR.new(
 "this should go to error log".log(:error)
 "this should go to production log".log(:warning)
 
-* If line matches a regexp then sent log/paypal.log as well as production.log
+* Example 4:
+If line matches a regexp then sent log/paypal.log as well as production.log
 AlogR.new(:log => "log/production.log", /paypal/ => "log/paypal.log")
 
 Gets logged to both
