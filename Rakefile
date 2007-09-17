@@ -4,13 +4,14 @@ require "rake/gempackagetask"
 require "rake/rdoctask"
 require "rake/testtask"
 require "fileutils"
+require "yaml"
 include FileUtils
 require "lib/alogr/version"
 
-NAME = "alogr"
+GEM_NAME = "alogr"
 #REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 REV = nil
-VERS = ENV["VERSION"] || AlogR::VERSION::STRING + (REV ? ".#{REV}" : "")
+GEM_VERSION = ENV["VERSION"] || AlogR::VERSION::STRING + (REV ? ".#{REV}" : "")
 CLEAN.include [
   "ext/aio_logger/*.{bundle,so,obj,pdb,lib,def,exp}", 
   "ext/aio_logger/Makefile", 
@@ -19,6 +20,24 @@ CLEAN.include [
   ".config"
 ]
 RDOC_OPTS = ["--quiet", "--title", "AlogR Reference", "--main", "README", "--inline-source"]
+
+@config_file = "~/.rubyforge/user-config.yml"
+@config = nil
+def rubyforge_username
+  unless @config
+    begin
+      @config = YAML.load(File.read(File.expand_path(@config_file)))
+    rescue
+      puts <<-EOS
+ERROR: No rubyforge config file found: #{@config_file}"
+Run 'rubyforge setup' to prepare your env for access to Rubyforge
+ - See http://newgem.rubyforge.org/rubyforge.html for more details
+      EOS
+      exit
+    end
+  end
+  @rubyforge_username ||= @config["username"]
+end
 
 desc "Does a full compile, test run"
 task :default => [:compile, :test]
@@ -56,8 +75,8 @@ end
 
 spec =
 Gem::Specification.new do | specification |
-  specification.name = NAME
-  specification.version = VERS
+  specification.name = GEM_NAME
+  specification.version = GEM_VERSION
   specification.platform = Gem::Platform::RUBY
   specification.has_rdoc = true
   specification.rdoc_options += RDOC_OPTS
@@ -117,41 +136,46 @@ end
 
 task :install do
   sh %{rake package}
-  sh %{sudo gem install pkg/#{NAME}-#{VERS}}
+  sh %{sudo gem install pkg/#{GEM_NAME}-#{GEM_VERSION}}
 end
 
 task :uninstall => [:clean] do
-  sh %{sudo gem uninstall #{NAME}}
+  sh %{sudo gem uninstall #{GEM_NAME}}
 end
 
-# Website tasks using webgen below
 
-task :site => [:site_webgen, :site_rdoc]
+#
+# Website tasks using webgen
+#
 
-task :site_webgen do
-  sh %{pushd doc/site; webgen; ruby atom.rb > output/feed.atom; rsync -azv output/* rubyforge.org:/var/www/gforge-projects/mongrel/; popd }
+desc "Generate and upload website files"
+task :website => [:generate_website, :upload_website, :generate_rdoc, :upload_rdoc]
+
+task :generate_website do
+  # ruby atom.rb > output/feed.atom
+  sh %{pushd website; webgen; popd }
 end
 
-task :site_rdoc do
-  sh %{ rsync -azv doc/rdoc/* rubyforge.org:/var/www/gforge-projects/mongrel/rdoc/ }
+task :generate_rdoc do
+  sh %{rake rdoc}
 end
 
 desc "Upload website files to rubyforge"
-task :website_upload do
-  host = "#{rubyforge_username}@rubyforge.org"
-  remote_dir = "/var/www/gforge-projects/#{PATH}/"
-  local_dir = "website"
-  sh %{rsync -aCv #{local_dir}/ #{host}:#{remote_dir}}
+task :upload_website do
+  sh %{rsync -avz #{local_dir}/ #{host}:#{remote_dir}}
+  sh %{rsync -avz website/output/ #{rubyforge_username}@rubyforge.org:/var/www/gforge-projects/#{GEM_NAME}/rdoc}
 end
 
-desc "Generate and upload website files"
-task :website => [:site, :website_upload]
+desc "Upload rdoc files to rubyforge"
+task :upload_rdoc do
+  sh %{rsync -avz doc/rdoc/ #{rubyforge_username}@rubyforge.org:/var/www/gforge-projects/#{GEM_NAME}/rdoc}
+end
 
 desc "Release the website and new gem version"
 task :deploy => [:check_version, :website, :release] do
   puts "Remember to create SVN tag:"
   puts "svn copy svn+ssh://#{rubyforge_username}@rubyforge.org/var/svn/#{PATH}/trunk " +
-  "svn+ssh://#{rubyforge_username}@rubyforge.org/var/svn/#{PATH}/tags/REL-#{VERS} "
+  "svn+ssh://#{rubyforge_username}@rubyforge.org/var/svn/#{PATH}/tags/REL-#{GEM_VERSION} "
   puts "Suggested comment:"
   puts "Tagging release #{CHANGES}"
 end
@@ -164,8 +188,8 @@ task :check_version do
     puts "Must pass a VERSION=x.y.z release version"
     exit
   end
-  unless ENV["VERSION"] == VERS
-    puts "Please update your version.rb to match the release version, currently #{VERS}"
+  unless ENV["VERSION"] == GEM_VERSION
+    puts "Please update your version.rb to match the release version, currently #{GEM_VERSION}"
     exit
   end
 end
@@ -182,8 +206,8 @@ PKG_FILES = FileList[
 ]
 
 Win32Spec = Gem::Specification.new do | specification |
-  specification.name = NAME
-  specification.version = VERS
+  specification.name = GEM_NAME
+  specification.version = GEM_VERSION
   specification.platform = Gem::Platform::WIN32
   specification.has_rdoc = false
   specification.extra_rdoc_files = ["README", "CHANGELOG", "COPYING"]
@@ -200,7 +224,7 @@ Win32Spec = Gem::Specification.new do | specification |
   specification.bindir = "bin"
 end
 
-WIN32_PKG_DIR = "alogr-" + VERS
+WIN32_PKG_DIR = "alogr-" + GEM_VERSION
 
 file WIN32_PKG_DIR => [:package] do
   sh "tar zxf pkg/#{WIN32_PKG_DIR}.tgz"
