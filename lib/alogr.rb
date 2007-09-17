@@ -1,49 +1,53 @@
-require "alogr_ext"
+require "aio_logger"
 
-class AlogR
-
+module AlogR
   Levels = { :emergency => 0, :alert => 1, :critical => 2, :error => 3, :warning => 4, :notice => 5, :info => 6, :debug => 7 }
+  
+  class Logger
 
-  class << self
-    attr_accessor :default_log_level
-  end
-
-  def initialize(options = {})
-    puts "In Ruby initialize method"
-    case options
-    when String:
-      options = {:log => options}
-    when Hash: 
-      options[:log] ||= "log/default.log"
-    else
-      raise "AlogR: Invalid configuration"
+    class << self
+      attr_accessor :default_log_level
     end
 
-    @log_interval = options[:log_interval] || 0.01
-    
-    default_log_level = options[:default_log_level] || :info
-    
-    AlogR::Levels.keys.each do | key |
-      file_name = options[key] || options[:log]
-      $alogr_log_files[AlogR::Levels[key]] = file_name
-      system("mkdir -p #{File.dirname(file_name)} ; touch #{file_name}")
-    end
-
-    Thread.abort_on_exception = true
-    Thread.new do
-      loop do
-        sleep( @log_interval )
-        flush_log_buffer
+    def initialize(options = {})
+      puts "In Ruby initialize method"
+      case options
+      when String:
+        options = {:log => options}
+      when Hash: 
+        options[:log] ||= "log/default.log"
+      else
+        raise "AlogR: Invalid configuration"
       end
-      Thread.exit
+
+      @log_interval = options[:log_interval] || 0.01
+
+      default_log_level = options[:default_log_level] || :info
+
+      AlogR::Levels.keys.each do | key |
+        file_name = options[key] || options[:log]
+        $alogr_log_files[AlogR::Levels[key]] = file_name
+        system("mkdir -p #{File.dirname(file_name)} ; touch #{file_name}")
+      end
+
+      Thread.abort_on_exception = true
+      Thread.new do
+        loop do
+          sleep( @log_interval )
+          flush_log_buffer
+        end
+        Thread.exit
+      end
     end
-  end
 
-  def log(string, level = default_log_level)
-    $alogr_buffer << [level, string]
-  end
+    def log(string, level = default_log_level)
+      $alogr_buffer << [level, string]
+    end
 
+  end
 end
+
+require "alogr/version"
 
 class Object
 

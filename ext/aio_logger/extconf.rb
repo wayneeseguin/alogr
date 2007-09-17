@@ -2,9 +2,9 @@
 require "mkmf"
 
 # Give it a name
-extension_name = "alogr_ext"
+extension_name = "aio_logger"
 
-# pthread
+have_library("c", "main")
 
 # The destination
 dir_config(extension_name)

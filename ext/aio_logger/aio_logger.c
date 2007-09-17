@@ -1,8 +1,3 @@
-// There might be a more efficient way to do this
-// However the goal is to make it work first :)
-// NOTE:
-//The signal handler does not output any error messages. Output from an asynchronous signal handler can interfere with I/O operations in the main program, and the standard library routines such as fprintf and perror may not be safe to use in signal handlers. Instead, the signal handler just keeps track of the errno value of the first error that occurred. The main program can then print an error message, using strerror.
-
 // ruby
 #include "ruby.h"
 #include "rubyio.h"
@@ -11,7 +6,7 @@
 #include <aio.h>
 #include <errno.h>
 #include <stdio.h>
-#include <fcntl.h> // Modes
+#include <fcntl.h> // File modes O_*
 
 static struct aiocb control_block;
 
@@ -20,7 +15,7 @@ int aio_log(char * string, int length, char * file_name) {
   int file_descriptor;
   const struct aiocb *aio_control_block_list;
 
-	printf("string %s, length: %d, file_name: %s", string, length, file_name);
+	printf("string %s, length: %d, file_name: %s\n", string, length, file_name);
 
 	if ((file_descriptor = open(file_name, O_CREAT | O_RDWR | O_APPEND)) == -1) {
     printf("Failed to open %s: %s\n", file_name, strerror(errno));
@@ -42,7 +37,7 @@ int aio_log(char * string, int length, char * file_name) {
 
 	printf("AIO operation returned %d\n", aio_return(&control_block));
 
-  //close(file_descriptor);
+  //close(file_descriptor); // Is this necessary? It appears not but...?
 
 	return 0;
 }
@@ -56,7 +51,7 @@ VALUE rb_flush_log_buffer() {
 
   // Remove the first item from the buffer
   work = rb_ary_shift(buffer);
-  while(!NIL_P(work)) {
+  while( !NIL_P(work) ) {
     log_level = FIX2INT(rb_ary_shift(work));
     rb_string = rb_ary_shift(work);
 
@@ -72,13 +67,18 @@ VALUE rb_flush_log_buffer() {
   return Qnil;
 }
 
-static VALUE rb_cAlogR;
+static VALUE rb_mAlogR;
+static VALUE rb_cLogger;
+
 // Called when interpreter loads alogr
-void Init_alogr_ext() {
+void Init_aio_logger() {
   printf("\n() Init_alogr_ext\n");
-  VALUE rb_cAlogR = rb_define_class("AlogR", rb_cObject);
+  
+  VALUE rb_mAlogR = rb_define_module("AlogR");
+  VALUE rb_cLogger = rb_define_class_under(rb_mAlogR, "Logger", rb_cObject);
+  
   rb_gv_set("alogr_buffer", rb_ary_new());
-  rb_gv_set("alogr_log_files",rb_ary_new());
-  //rb_define_method(rb_cAlogR, "aio_log", rb_aio_log, 2);
-  rb_define_method(rb_cAlogR, "flush_log_buffer", rb_flush_log_buffer, 0);
+  rb_gv_set("alogr_log_files", rb_ary_new());
+  
+  rb_define_method(rb_cLogger, "flush_log_buffer", rb_flush_log_buffer, 0);
 }

@@ -4,3 +4,5 @@
 ** rake package
 * Allow for specifying either absolute log paths or relative log paths with root directory.
 * Allow for regexen
+* Write RDoc
+* Write website
