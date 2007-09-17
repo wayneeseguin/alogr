@@ -44,6 +44,15 @@ module AlogR
       $alogr_buffer << [level, string]
     end
 
+    def method_missing(meth, *options)
+      puts "method: #{meth.inspect}, options: #{options.inspect}"
+      if AlogR::Levels.include?( meth )
+        log(meth, options.first)
+      else
+        super.method_missing(meth, *options)
+      end
+    end
+
   end
 end
 
