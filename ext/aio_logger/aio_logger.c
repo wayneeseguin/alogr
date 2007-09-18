@@ -14,6 +14,7 @@ static struct aiocb control_block;
 int aio_log(char * string, int length, char * file_name) {
   int file_descriptor;
   const struct aiocb *aio_control_block_list;
+  printf("(%d,%s,%s)\n", length,string,file_name);
 
 	//printf("string %s, length: %d, file_name: %s\n", string, length, file_name);
 
@@ -72,8 +73,6 @@ static VALUE rb_cLogger;
 
 // Called when interpreter loads alogr
 void Init_aio_logger() {
-  printf("\n() Init_alogr_ext\n");
-  
   VALUE rb_mAlogR = rb_define_module("AlogR");
   VALUE rb_cLogger = rb_define_class_under(rb_mAlogR, "Logger", rb_cObject);
   
