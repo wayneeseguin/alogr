@@ -15,10 +15,10 @@ int aio_log(char * string, int length, char * file_name) {
   int file_descriptor;
   const struct aiocb *aio_control_block_list;
 
-	printf("string %s, length: %d, file_name: %s\n", string, length, file_name);
+	//printf("string %s, length: %d, file_name: %s\n", string, length, file_name);
 
 	if ((file_descriptor = open(file_name, O_CREAT | O_RDWR | O_APPEND)) == -1) {
-    printf("Failed to open %s: %s\n", file_name, strerror(errno));
+    //printf("Failed to open %s: %s\n", file_name, strerror(errno));
     return 1;
   }
   
@@ -35,9 +35,9 @@ int aio_log(char * string, int length, char * file_name) {
   aio_control_block_list = &control_block;
   aio_suspend(&aio_control_block_list, 1, NULL);
 
-	printf("AIO operation returned %d\n", aio_return(&control_block));
+	//printf("AIO operation returned %d\n", aio_return(&control_block));
 
-  //close(file_descriptor); // Is this necessary? It appears not but...?
+  close(file_descriptor); // Is this necessary? It appears not but...?
 
 	return 0;
 }

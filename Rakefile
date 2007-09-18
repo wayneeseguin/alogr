@@ -11,7 +11,8 @@ require "lib/alogr/version"
 GEM_NAME = "alogr"
 #REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 REV = nil
-GEM_VERSION = ENV["VERSION"] || AlogR::VERSION::STRING + (REV ? ".#{REV}" : "")
+#GEM_VERSION = ENV["VERSION"] || AlogR::VERSION::STRING + (REV ? ".#{REV}" : "")
+GEM_VERSION = AlogR::VERSION::STRING + (REV ? ".#{REV}" : "")
 CLEAN.include [
   "ext/aio_logger/*.{bundle,so,obj,pdb,lib,def,exp}", 
   "ext/aio_logger/Makefile", 
@@ -162,8 +163,7 @@ end
 
 desc "Upload website files to rubyforge"
 task :upload_website do
-  sh %{rsync -avz #{local_dir}/ #{host}:#{remote_dir}}
-  sh %{rsync -avz website/output/ #{rubyforge_username}@rubyforge.org:/var/www/gforge-projects/#{GEM_NAME}/rdoc}
+  sh %{rsync -avz website/output/ #{rubyforge_username}@rubyforge.org:/var/www/gforge-projects/#{GEM_NAME}/}
 end
 
 desc "Upload rdoc files to rubyforge"
