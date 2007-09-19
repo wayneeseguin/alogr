@@ -1,4 +1,4 @@
-#require "lib/alogr"
+require "lib/alogr"
 
 describe "AlogR" do
   before :each do

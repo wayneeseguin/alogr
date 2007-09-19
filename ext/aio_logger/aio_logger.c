@@ -8,18 +8,15 @@
 #include <stdio.h>
 #include <fcntl.h> // File modes O_*
 
-static struct aiocb control_block;
-
 // Asynchronously log the string of specified length to given file
 int aio_log(char * string, int length, char * file_name) {
-  int file_descriptor;
+  int file_descriptor, return_value, bytes_written;
   const struct aiocb *aio_control_block_list;
-  printf("(%d,%s,%s)\n", length,string,file_name);
+  struct aiocb control_block;
 
-	//printf("string %s, length: %d, file_name: %s\n", string, length, file_name);
+  bzero( &control_block, sizeof (struct aiocb)); 
 
 	if ((file_descriptor = open(file_name, O_CREAT | O_RDWR | O_APPEND)) == -1) {
-    //printf("Failed to open %s: %s\n", file_name, strerror(errno));
     return 1;
   }
   
@@ -30,42 +27,44 @@ int aio_log(char * string, int length, char * file_name) {
 	control_block.aio_offset = 0;
 	
 	// Perform the asynch write
-	aio_write(&control_block);
+	return_value = aio_write(&control_block);
+  if (return_value) perror("aio_write:");
 
 	// Wait for write to finish
   aio_control_block_list = &control_block;
   aio_suspend(&aio_control_block_list, 1, NULL);
-
-	//printf("AIO operation returned %d\n", aio_return(&control_block));
-
-  close(file_descriptor); // Is this necessary? It appears not but...?
+  bytes_written = aio_return( &control_block);
 
 	return 0;
 }
 
 VALUE rb_flush_log_buffer() {
-  VALUE work, rb_string, buffer, log_files;
-  int log_level;
+  VALUE packet, rb_string, buffer, log_files;
+  int log_level, return_value;
 
   log_files = rb_gv_get("$alogr_log_files");
   buffer= rb_gv_get("$alogr_buffer");
 
-  // Remove the first item from the buffer
-  work = rb_ary_shift(buffer);
-  while( !NIL_P(work) ) {
-    log_level = FIX2INT(rb_ary_shift(work));
-    rb_string = rb_ary_shift(work);
+  
+  packet = rb_ary_shift(buffer); // Remove the first log packet from the buffer
+  while( !NIL_P(packet) ) {
+    rb_string = rb_ary_shift(packet);
+    log_level = FIX2INT(rb_ary_shift(packet));
 
-    aio_log(
+    return_value = aio_log(
       RSTRING(rb_string)->ptr, // The string to log
       RSTRING(rb_string)->len, // Real length of string to log
       RSTRING(rb_ary_entry(log_files, log_level))->ptr // log file name
       );
 
-    work = rb_ary_shift(buffer); // Fetch the next item of work
+    if( return_value > 0 ) {
+      // Unable to open the log file
+      return Qnil; // TODO: false
+    }
+    packet = rb_ary_shift(buffer); // Fetch the next log packet
   }
 
-  return Qnil;
+  return Qnil; // TODO: true
 }
 
 static VALUE rb_mAlogR;

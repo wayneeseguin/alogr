@@ -46,12 +46,12 @@ Feature Requests:
 = Examples
 
 * Example 1
-require "lib/alogr"
+require "alogr"
 $logger = AlogR::Logger.new(:log => "/Users/wayne/projects/ruby/alogr/trunk/log/default.log")
 "a test, should go to the logs 10 times\n".log.log.log.log.log.log.log.log.log.log
 
 * Example 2
-require "lib/alogr"
+require "alogr"
 $logger = AlogR.new(
 :log => "/Users/wayne/projects/ruby/alogr/trunk/log/production.log", 
 :error => "/Users/wayne/projects/ruby/alogr/trunk/log/error.log"
