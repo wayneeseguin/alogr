@@ -43,9 +43,9 @@ module AlogR
         Thread.exit
       end
       
-      at_exit do
-        sleep(@@config[:log_interval].to_f * 1.2) # Allow log buffer to get emptied before exiting
-      end
+      #at_exit do
+      #  sleep(@@config[:log_interval].to_f * 1.2) # Allow log buffer to get emptied before exiting
+      #end
       
       self
     end
