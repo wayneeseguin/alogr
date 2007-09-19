@@ -35,6 +35,8 @@ int aio_log(char * string, int length, char * file_name) {
   aio_suspend(&aio_control_block_list, 1, NULL);
   bytes_written = aio_return( &control_block);
 
+  close(file_descriptor);
+
 	return 0;
 }
 
@@ -44,7 +46,6 @@ VALUE rb_flush_log_buffer() {
 
   log_files = rb_gv_get("$alogr_log_files");
   buffer= rb_gv_get("$alogr_buffer");
-
   
   packet = rb_ary_shift(buffer); // Remove the first log packet from the buffer
   while( !NIL_P(packet) ) {
@@ -59,12 +60,12 @@ VALUE rb_flush_log_buffer() {
 
     if( return_value > 0 ) {
       // Unable to open the log file
-      return Qnil; // TODO: false
+      return Qfalse;
     }
     packet = rb_ary_shift(buffer); // Fetch the next log packet
   }
-
-  return Qnil; // TODO: true
+  
+  return Qtrue;
 }
 
 static VALUE rb_mAlogR;

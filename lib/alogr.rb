@@ -1,4 +1,5 @@
 require "aio_logger"
+# require "YAML"
 
 module AlogR
   
@@ -6,41 +7,27 @@ module AlogR
   
   class Logger
 
-    class << self
-      attr_accessor :config
-      
-      def log( string, level = ( config[:default_log_level] || :info ) )
-        level = AlogR::Levels[level] if AlogR::Levels.has_key?( level )
-        $alogr_buffer << [config[:newline] ? (string << "\n") : string, level]
-      end
-
-      def method_missing( method, *options )
-        if AlogR::Levels.include?( method )
-          log( method, options.first )
-        else
-          super.method_missing( method, *options )
-        end
-      end
-      
-    end
+    @@config = {}
 
     def initialize( options = {} )
-      
+      # TODO: Load config from YAML file, if :config has a valid filename and is valid yaml, 
+      #       fallback to options hash values
       if options.class ==  String
         options = { :log => options }
       elsif options.class == Hash
         options[:log] ||= "log/default.log"
       else
-        raise "AlogR: Invalid configuration"
+        raise ArgumentError, "Invalid configuration specified"
       end
       
-      config = options
+      @@config = options
+      @@config[:line_ending] = options[:line_ending] || "\n" unless options[:newline] == false
 
       AlogR::Levels.keys.each do | key |
-        file_name = options[key] || options[:log]
+        file_name = options[key] || options[:log] || options[:default]
         $alogr_log_files[AlogR::Levels[key]] = file_name.freeze
         # TODO: Verifiy valid filename, if not raise an error
-        system("mkdir -p #{File.dirname(file_name)} ; touch #{file_name}")
+        system( "mkdir -p #{File.dirname(file_name)} ; touch #{file_name}" )
       end
       
       Object.logger = self # This becomes the default logger
@@ -48,14 +35,34 @@ module AlogR
       Thread.abort_on_exception = true
       Thread.new do
         loop do
-          sleep( config[:log_interval] || 0.25 )
-          flush_log_buffer
+          sleep( @@config[:log_interval] || 0.25 )
+          unless flush_log_buffer
+            raise "Unable to open a log file" # TODO: Be more specific
+          end
         end
         Thread.exit
       end
-
+      
+      at_exit do
+        sleep(@@config[:log_interval].to_f * 1.2) # Allow log buffer to get emptied before exiting
+      end
+      
       self
     end
+
+    def buffer( string, level = ( @@config[:default_log_level] || :info ) )
+      level = AlogR::Levels[level] if AlogR::Levels.has_key?( level )
+      string << @@config[:line_ending]
+      $alogr_buffer << [ string, level]
+    end
+
+    def method_missing( method, *options )
+      if AlogR::Levels.include?( method )
+        log( options.first, method )
+      else
+        super.method_missing( method, *options )
+      end
+    end    
     
   end
 end
@@ -65,25 +72,25 @@ class Object
     attr_accessor :logger
   end
 
-  def log(*args) # level = :info
+  def log( *args )
     Object.logger ||= AlogR::Logger.new
     
     if self.class == String
-      require "ruby-debug" and debugger
       level = args.first || :info
-      unless AlogR::Levels[level].nil?
-        Object.logger.log(self, AlogR::Levels[level])
+      unless AlogR::Levels[level.to_sym].nil?
+        Object.logger.buffer( self, AlogR::Levels[level.to_sym] )
+        self
       else
-        raise "Error: No such level: #{level}"
+        raise ArgumentError, "Error: No such level: #{level}"
       end
     else
-      self.to_s.log
+      if args.first.class == String
+        args.first.log args[1]
+      else
+        self.to_s.log
+      end
+      self
     end
-    self
   end
 
-end
-
-at_exit do
-  sleep(1) # Allow log buffer to get emptied
 end
