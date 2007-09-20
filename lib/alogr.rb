@@ -1,5 +1,5 @@
 require "aio_logger"
-# require "YAML"
+# require "yaml"
 
 module AlogR
   
@@ -36,9 +36,17 @@ module AlogR
       Thread.new do
         loop do
           sleep( @@config[:log_interval] || 0.25 )
-          unless flush_log_buffer
-            raise "Unable to open a log file" # TODO: Be more specific
-          end
+          packet = $alogr_buffer.shift
+          while !packet.nil? do
+            string = packet.shift
+            level = packet.shift
+            puts "packet: string: #{string}, filename: #{$alogr_log_files[level]ma}"
+            aio_log( string, $alogr_log_files[level])
+            packet = $alogr_buffer.shift
+          end 
+          #unless flush_log_buffer
+          #  raise "Unable to open a log file" # TODO: Be more specific
+          #end
         end
         Thread.exit
       end
@@ -53,7 +61,7 @@ module AlogR
     def buffer( string, level = ( @@config[:default_log_level] || :info ) )
       level = AlogR::Levels[level] if AlogR::Levels.has_key?( level )
       string << @@config[:line_ending]
-      $alogr_buffer << [ string, level]
+      $alogr_buffer << [ string, level ]
     end
 
     def method_missing( method, *options )
