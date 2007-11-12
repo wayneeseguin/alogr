@@ -1,5 +1,4 @@
-require "fileutils"
-require "alogr"
+require "spec_helper"
 
 describe "AlogR" do
 
@@ -12,19 +11,19 @@ describe "AlogR" do
     FileUtils::rm_rf @log_dir
   end
   
-  it "should create global array $alogr_buffer" do
-    $alogr_buffer.should == []
+  it "should create a global array $alogr_buffers" do
+    $alogr_buffers.should == []
   end
 
   it "should create global array $alogr_log_files" do
     $alog_log_files.should == []
   end
   
-  it "should define Object#log" do
-    Object.should respond_to(:log)
+  it "including AlogR should define Kernel#log" do
+    Kernel.should respond_to(:log)
   end
-
-  it "should create a log directory" do
+  
+  it "should create a log directory and log file when 'log/default.log' is passed in" do
     $logger = AlogR::Logger.new @log_file
     true.should == File.directory?(@log_dir)
   end
