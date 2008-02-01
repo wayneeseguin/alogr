@@ -77,19 +77,19 @@ $logger = AlogR.new(
 :warning => "/Users/wayne/projects/ruby/alogr/trunk/log/warning.log"
 )
 
-"this should go to info log\n".log
+"this should go to info log".log
 
-"this should go to error log\n".log(:error)
+"this should go to error log".log(:error)
 
-"this should go to production log\n".log(:warning)
+"this should go to production log".log(:warning)
 
 "error".log :error
 
-"warning\n".log :warning
+"warning".log :warning
 
-"info\n".log :info
+"info".log :info
 
-"yetanother error\n".log :error
+"yetanother error".log :error
 
 * Example 4
 require "lib/alogr"

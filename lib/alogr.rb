@@ -1,4 +1,4 @@
-require "aio_logger"
+# require "aio_logger"
 # require "yaml"
 
 module AlogR
@@ -138,7 +138,7 @@ module AlogR
           #   aio_log( string, $alogr_log_files[level])
           #   packet = $alogr_buffer.shift
           # end
-          
+          flush
           #unless flush_log_buffer
           #  raise "Unable to open a log file" # TODO: Be more specific
           #end
@@ -161,7 +161,7 @@ module AlogR
     end
 
     def initialize_io(io)
-      if io.class == String && File.exists?()
+      if io.class == String && File.exists?(io)
         File.open(io)
       elsif io.kind_of?(IO)
         io
@@ -178,6 +178,7 @@ module AlogR
       end
     end
 
+    # TODO: on initialize have the methods defined, don't use method_missing for them.
     def method_missing(method, *options)
       if AlogR::Levels.include?(method)
         log(options.first, method)
@@ -187,9 +188,10 @@ module AlogR
     end
     
   end
+
 end
 
-class Kernel
+module Kernel
   class << self ; attr_accessor :logger ; end
 
   def log(*args)

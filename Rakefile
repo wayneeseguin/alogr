@@ -5,21 +5,22 @@ require "rake/rdoctask"
 require "rake/testtask"
 require "fileutils"
 require "yaml"
+require "lib/alogr"
+
 include FileUtils
-require "lib/alogr/version"
 
 GEM_NAME = "alogr"
 #REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 REV = nil
 #GEM_VERSION = ENV["VERSION"] || AlogR::VERSION::STRING + (REV ? ".#{REV}" : "")
-GEM_VERSION = AlogR::VERSION::STRING + (REV ? ".#{REV}" : "")
-CLEAN.include [
-  "ext/aio_logger/*.{bundle,so,obj,pdb,lib,def,exp}", 
-  "ext/aio_logger/Makefile", 
-  "**/.*.sw?", 
-  "*.gem", 
-  ".config"
-]
+GEM_VERSION = AlogR::Version# + (REV ? ".#{REV}" : "")
+#CLEAN.include [
+#  "ext/aio_logger/*.{bundle,so,obj,pdb,lib,def,exp}", 
+#  "ext/aio_logger/Makefile", 
+#  "**/.*.sw?", 
+#  "*.gem", 
+#  ".config"
+#]
 RDOC_OPTS = ["--quiet", "--title", "AlogR Reference", "--main", "README", "--inline-source"]
 
 @config_file = "~/.rubyforge/user-config.yml"
@@ -40,32 +41,32 @@ Run 'rubyforge setup' to prepare your env for access to Rubyforge
   @rubyforge_username ||= @config["username"]
 end
 
-desc "Does a full compile, test run"
-task :default => [:compile, :test]
+#desc "Does a full compile, test run"
+#task :default => [:compile, :test]
 
-desc "Compiles all extensions"
-task :compile => [:aio_logger] do
-  if Dir.glob(File.join("lib","aio_logger.*")).length == 0
-    STDERR.puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    STDERR.puts "Gem actually failed to build.  Your system is"
-    STDERR.puts "NOT configured properly to build aio_logger."
-    STDERR.puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    exit(1)
-  end
-end
+#desc "Compiles all extensions"
+#task :compile => [:aio_logger] do
+#  if Dir.glob(File.join("lib","aio_logger.*")).length == 0
+#    STDERR.puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+#    STDERR.puts "Gem actually failed to build.  Your system is"
+#    STDERR.puts "NOT configured properly to build aio_logger."
+#    STDERR.puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+#    exit(1)
+#  end
+#end
 
 desc "Packages up AlogR."
-task :package => [:clean]
+task :package# => [:clean]
 
 desc "Releases packages for all AlogR packages and platforms."
-task :release => [:package, :rubygems_win32]
+task :release => [:package]#, :rubygems_win32]
 
-desc "Run all the tests"
-Rake::TestTask.new do | test_task |
-  test_task.libs << "test"
-  test_task.test_files = FileList["test/test_*.rb"]
-  test_task.verbose = true
-end
+#desc "Run all the specs"
+#Rake::SpecTask.new do | spec_task |
+  #spec_task.libs << "spec"
+  #spec_task.spec_files = FileList["spec/*_spec.rb"]
+  #spec_task.spec_opts = ["--color", "--diff"]
+#end
 
 Rake::RDocTask.new do | rdoc |
   rdoc.rdoc_dir = "doc/rdoc"
@@ -89,12 +90,12 @@ Gem::Specification.new do | specification |
   specification.homepage = "alogr.rubyforge.org"
   
   specification.files = %w(COPYING README Rakefile) +
-  Dir.glob("{bin,doc,test,lib,extras}/**/*") + 
-  Dir.glob("ext/**/*.{h,c,rb,rl}") + 
-  %w[ext/aio_logger/aio_logger.c] # needed because it's generated later
+  Dir.glob("{bin,doc,test,lib,extras}/**/*")# + 
+  #Dir.glob("ext/**/*.{h,c,rb,rl}") + 
+  #%w[ext/aio_logger/aio_logger.c] # needed because it's generated later
 
   specification.require_path = "lib"
-  specification.extensions = FileList["ext/**/extconf.rb"].to_a
+  #specification.extensions = FileList["ext/**/extconf.rb"].to_a
   specification.bindir = "bin"
 end
 
@@ -103,50 +104,49 @@ Rake::GemPackageTask.new(spec) do | package |
   package.gem_spec = spec
 end
 
-extension = "aio_logger"
-ext = "ext/aio_logger"
-ext_so = "#{ext}/#{extension}.#{Config::CONFIG["DLEXT"]}"
-ext_files = FileList[
-  "#{ext}/*.c",
-  "#{ext}/*.h",
-  "#{ext}/*.rl",
-  "#{ext}/extconf.rb",
-  "#{ext}/Makefile",
-  "lib"
-] 
+#extension = "aio_logger"
+#ext = "ext/aio_logger"
+#ext_so = "#{ext}/#{extension}.#{Config::CONFIG["DLEXT"]}"
+#ext_files = FileList[
+  #"#{ext}/*.c",
+  #"#{ext}/*.h",
+  #"#{ext}/*.rl",
+  #"#{ext}/extconf.rb",
+  #"#{ext}/Makefile",
+  #"lib"
+#] 
 
 task "lib" do
   directory "lib"
 end
 
-desc "Builds just the #{extension} extension"
-task extension.to_sym => ["#{ext}/Makefile", ext_so ]
+#desc "Builds just the #{extension} extension"
+#task extension.to_sym => ["#{ext}/Makefile", ext_so ]
 
-file "#{ext}/Makefile" => ["#{ext}/extconf.rb"] do
-  Dir.chdir(ext) do
-    ruby "extconf.rb"
-  end
-end
+#file "#{ext}/Makefile" => ["#{ext}/extconf.rb"] do
+#  Dir.chdir(ext) do
+#    ruby "extconf.rb"
+#  end
+#end
 
-file ext_so => ext_files do
-  Dir.chdir(ext) do
-    sh(PLATFORM =~ /win32/ ? "nmake" : "make")
-  end
-  cp ext_so, "lib"
-end
+#file ext_so => ext_files do
+#  Dir.chdir(ext) do
+#    sh(PLATFORM =~ /win32/ ? "nmake" : "make")
+#  end
+#  cp ext_so, "lib"
+#end
 
 task :install do
   sh %{rake package}
   sh %{sudo gem install pkg/#{GEM_NAME}-#{GEM_VERSION}}
 end
 
-task :uninstall => [:clean] do
+task :uninstall do#=> [:clean] do
   sh %{sudo gem uninstall #{GEM_NAME}}
 end
 
-
 #
-# Website tasks using webgen
+# Website tasks via webgen
 #
 
 desc "Generate and upload website files"
@@ -193,58 +193,3 @@ task :check_version do
     exit
   end
 end
-
-
-# Shies below
-
-PKG_FILES = FileList[
-  "test/**/*.{rb,html,xhtml}",
-  "lib/**/*.rb",
-  "ext/**/*.{c,rb,h,rl}",
-  "CHANGELOG", "README", "Rakefile", "COPYING",
-  "extras/**/*", "lib/aio_logger.so"
-]
-
-Win32Spec = Gem::Specification.new do | specification |
-  specification.name = GEM_NAME
-  specification.version = GEM_VERSION
-  specification.platform = Gem::Platform::WIN32
-  specification.has_rdoc = false
-  specification.extra_rdoc_files = ["README", "CHANGELOG", "COPYING"]
-  specification.summary = "a threadsafe non-blocking asynchronous configurable logger for Ruby."
-  specification.description = specification.summary
-  specification.author = "Wayne E. Seguin"
-  specification.email = "wayneeseguin at gmail dot com"
-  specification.homepage = "alogr.rubyforge.org"
-  
-  specification.files = PKG_FILES
-  
-  specification.require_path = "lib"
-  specification.extensions = []
-  specification.bindir = "bin"
-end
-
-WIN32_PKG_DIR = "alogr-" + GEM_VERSION
-
-file WIN32_PKG_DIR => [:package] do
-  sh "tar zxf pkg/#{WIN32_PKG_DIR}.tgz"
-end
-
-desc "Cross-compile the aio_logger extension for win32"
-file "aio_logger_win32" => [WIN32_PKG_DIR] do
-  cp "extras/mingw-rbconfig.rb", "#{WIN32_PKG_DIR}/ext/aio_logger/rbconfig.rb"
-  sh "cd #{WIN32_PKG_DIR}/ext/aio_logger/ && ruby -I. extconf.rb && make"
-  mv "#{WIN32_PKG_DIR}/ext/aio_logger/aio_logger.so", "#{WIN32_PKG_DIR}/lib"
-end
-
-desc "Build the binary RubyGems package for win32"
-task :rubygems_win32 => ["aio_logger_win32"] do
-  Dir.chdir("#{WIN32_PKG_DIR}") do
-    Gem::Builder.new(Win32Spec).build
-    verbose(true) {
-      mv Dir["*.gem"].first, "../pkg/alogr-#{VERS}-mswin32.gem"
-    }
-  end
-end
-
-CLEAN.include WIN32_PKG_DIR
